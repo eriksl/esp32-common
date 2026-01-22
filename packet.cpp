@@ -1,7 +1,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "util.h"
 #include "encryption.h"
 #include "exception.h"
 
