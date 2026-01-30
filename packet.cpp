@@ -136,7 +136,7 @@ static_assert((sizeof(Packet::packet_header_t) % 4) == 0);
 			our_checksum = encryption.crc32_finish();
 
 			if(our_checksum != packet_header->packet_checksum)
-				throw(boost::format("invalid packet checksum, ours: 0x%x, theirs: 0x%x") % our_checksum % packet_header->packet_checksum);
+				throw(hard_exception(boost::format("invalid packet checksum, ours: 0x%x, theirs: 0x%x") % our_checksum % packet_header->packet_checksum));
 		}
 		else
 		{
@@ -152,7 +152,7 @@ static_assert((sizeof(Packet::packet_header_t) % 4) == 0);
 			else
 			{
 				if((oob_offset + 1) > packet.length())
-					throw(boost::format("invalid unpacketised oob data, data length: %u, oob_offset: %u") % data.length() % oob_offset);
+					throw(hard_exception(boost::format("invalid unpacketised oob data, data length: %u, oob_offset: %u") % data.length() % oob_offset));
 
 				data = packet.substr(0, oob_offset);
 				oob_data = packet.substr(oob_offset + 1);

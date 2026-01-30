@@ -147,36 +147,60 @@ void Encryption::sha256_init()
 {
 	const mbedtls_md_info_t *info;
 
-	mbedtls_md_init(&this->sha256_ctx);
-
-	this->sha256_ctx_active = true;
+	if(this->sha256_ctx_active)
+		throw(hard_exception("Encryption::sha256_init: sha256 already active"));
 
 	if(!(info = mbedtls_md_info_from_type(MBEDTLS_MD_SHA256)))
 		throw(hard_exception("Encryption::sha256_init: error in mbedtls_md_info_from_type"));
 
+	mbedtls_md_init(&this->sha256_ctx);
+
 	if(mbedtls_md_setup(&this->sha256_ctx, info, /* enable HMAC */ 0))
+	{
+		mbedtls_md_free(&this->sha256_ctx);
 		throw(hard_exception("Encryption::sha256_init: error in mbedtls_md_setup"));
+	}
 
 	if(mbedtls_md_starts(&this->sha256_ctx))
+	{
+		mbedtls_md_free(&this->sha256_ctx);
 		throw(hard_exception("Encryption::sha256_init: error in mbedtls_starts"));
+	}
+
+	this->sha256_ctx_active = true;
 }
 
 void Encryption::sha256_update(std::string_view input)
 {
+	if(!this->sha256_ctx_active)
+		throw(hard_exception("Encryption::sha256_update: sha256 not active"));
+
 	if(mbedtls_md_update(&this->sha256_ctx, reinterpret_cast<const unsigned char *>(input.data()), input.size()))
+	{
+		mbedtls_md_free(&this->sha256_ctx);
+		this->sha256_ctx_active = false;
 		throw(hard_exception("Encryption::sha256_update: error in mbedtls_update"));
+	}
 }
 
 std::string Encryption::sha256_finish()
 {
 	std::string out;
 
+	if(!this->sha256_ctx_active)
+		throw(hard_exception("Encryption::sha256_finish: sha256 not active"));
+
 	out.resize(256 / 8);
 
 	if(mbedtls_md_finish(&this->sha256_ctx, reinterpret_cast<unsigned char *>(out.data())))
+	{
+		mbedtls_md_free(&this->sha256_ctx);
+		this->sha256_ctx_active = false;
 		throw(hard_exception("Encryption::sha256_finish: error in mbedtls_finish"));
+	}
 
 	mbedtls_md_free(&this->sha256_ctx);
+
 	this->sha256_ctx_active = false;
 
 	return(out);
