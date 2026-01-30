@@ -219,30 +219,48 @@ void Encryption::aes256_init(bool encrypt, std::string_view key)
 {
 	const mbedtls_cipher_info_t *info;
 
+	if(this->aes256_ctx_active)
+		throw(hard_exception("Encryption::aes256_init: aes256 not inactive"));
+
 	if(key.size() != (256 / 8))
 		throw(hard_exception("Encryption::aes256_init: invalid binary key length"));
-
-	mbedtls_cipher_init(&this->aes256_ctx);
-
-	this->aes256_ctx_active = true;
 
 	if(!(info = mbedtls_cipher_info_from_type(MBEDTLS_CIPHER_AES_256_CBC)))
 		throw(hard_exception("Encryption::aes256_init: error in mbedtls_cipher_info_from_type"));
 
+	mbedtls_cipher_init(&this->aes256_ctx);
+
 	if(mbedtls_cipher_setup(&this->aes256_ctx, info))
+	{
+		mbedtls_cipher_free(&this->aes256_ctx);
 		throw(hard_exception("Encryption::aes256_init: error in mbedtls_cipher_setup"));
+	}
 
     if(mbedtls_cipher_setkey(&this->aes256_ctx, reinterpret_cast<const unsigned char *>(key.data()), key.size() * 8, encrypt ? MBEDTLS_ENCRYPT : MBEDTLS_DECRYPT) != 0)
+	{
+		mbedtls_cipher_free(&this->aes256_ctx);
 		throw(hard_exception("Encryption::aes256_init: error in mbedtls_cipher_setkey"));
+	}
 
     if(mbedtls_cipher_set_padding_mode(&this->aes256_ctx, MBEDTLS_PADDING_PKCS7))
+	{
+		mbedtls_cipher_free(&this->aes256_ctx);
 		throw(hard_exception("Encryption::aes256_init: error in mbedtls_cipher_set_padding_mode"));
+	}
 
     if(mbedtls_cipher_reset(&this->aes256_ctx))
+	{
+		mbedtls_cipher_free(&this->aes256_ctx);
 		throw(hard_exception("Encryption::aes256_init: error in mbedtls_cipher_reset"));
+	}
 
     if(mbedtls_cipher_set_iv(&this->aes256_ctx, iv, sizeof(iv)))
+	{
+		mbedtls_cipher_free(&this->aes256_ctx);
 		throw(hard_exception("Encryption::aes256_init: error in mbedtls_cipher_set_iv"));
+	}
+
+	this->aes256_ctx_active = true;
 }
 
 std::string Encryption::aes256_update(std::string_view in)
@@ -250,11 +268,18 @@ std::string Encryption::aes256_update(std::string_view in)
 	std::string out;
 	size_t outlen;
 
+	if(!this->aes256_ctx_active)
+		throw(hard_exception("Encryption::aes256_update: aes256 not active"));
+
 	out.resize(in.size() + 32);
 	outlen = out.size();
 
     if(mbedtls_cipher_update(&this->aes256_ctx, reinterpret_cast<const unsigned char *>(in.data()), in.size(), reinterpret_cast<unsigned char *>(out.data()), &outlen))
+	{
+		mbedtls_cipher_free(&this->aes256_ctx);
+		this->aes256_ctx_active = false;
 		throw(hard_exception("Encryption::aes256_update: error in mbedtls_cipher_update"));
+	}
 
 	out.resize(outlen);
 
@@ -265,12 +290,20 @@ std::string Encryption::aes256_finish()
 {
 	std::string out;
 	size_t outlen;
+	int rv;
+
+	if(!this->aes256_ctx_active)
+		throw(hard_exception("Encryption::aes256_finish: aes256 not active"));
 
 	out.resize(32);
 	outlen = out.size();
 
-	if(mbedtls_cipher_finish(&this->aes256_ctx, reinterpret_cast<unsigned char *>(out.data()), &outlen))
-		throw(hard_exception("Encryption::aes256_finish: error in mbedtls_cipher_finish"));
+	if(!!(rv = mbedtls_cipher_finish(&this->aes256_ctx, reinterpret_cast<unsigned char *>(out.data()), &outlen)))
+	{
+		mbedtls_cipher_free(&this->aes256_ctx);
+		this->aes256_ctx_active = false;
+		throw(hard_exception(std::format("Encryption::aes256_finish: error in mbedtls_cipher_finish: {:#x}", rv)));
+	}
 
 	out.resize(outlen);
 
