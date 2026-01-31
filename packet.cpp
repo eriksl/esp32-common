@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "encryption.h"
+#include "crypt.h"
 #include "exception.h"
 
 #include "packet.h"
@@ -41,13 +41,12 @@ bool Packet::complete(std::string_view packet)
 
 std::string Packet::encapsulate(bool packetised, std::string_view data, std::string_view oob_data)
 {
+	packet_header_t packet_header;
 	std::string packet;
-	Encryption encryption;
+	Crypt::CRC32 crc;
 
 	if(packetised)
 	{
-		packet_header_t packet_header;
-
 		memset(&packet_header, 0, sizeof(packet_header));
 		packet_header.soh = packet_header_soh;
 		packet_header.version = packet_header_version;
@@ -55,13 +54,13 @@ std::string Packet::encapsulate(bool packetised, std::string_view data, std::str
 		packet_header.header_length = sizeof(packet_header);
 		packet_header.payload_length = data.length();
 		packet_header.oob_length = oob_data.length();
-		packet_header.header_checksum = Encryption::crc32(std::string_view(reinterpret_cast<const char *>(&packet_header), offsetof(packet_header_t, header_checksum)));
+		packet_header.header_checksum = Crypt::crc32(std::string_view(reinterpret_cast<const char *>(&packet_header), offsetof(packet_header_t, header_checksum)));
 
-		encryption.crc32_init();
-		encryption.crc32_update(std::string_view(reinterpret_cast<const char *>(&packet_header), offsetof(packet_header_t, packet_checksum)));
-		encryption.crc32_update(data);
-		encryption.crc32_update(oob_data);
-		packet_header.packet_checksum = encryption.crc32_finish();
+		crc.init();
+		crc.update(std::string_view(reinterpret_cast<const char *>(&packet_header), offsetof(packet_header_t, packet_checksum)));
+		crc.update(data);
+		crc.update(oob_data);
+		packet_header.packet_checksum = crc.string_to_uint32(crc.finish());
 
 		packet.assign(reinterpret_cast<const char *>(&packet_header), sizeof(packet_header));
 		packet.append(data);
@@ -87,7 +86,7 @@ std::string Packet::encapsulate(bool packetised, std::string_view data, std::str
 void Packet::decapsulate(bool packetised, std::string_view packet, std::string &data, std::string &oob_data)
 {
 	uint32_t our_checksum;
-	Encryption encryption;
+	Crypt::CRC32 crc;
 
 #define assert_field(name, field, offset) static_assert(offsetof(name, field) == offset)
 
@@ -121,7 +120,7 @@ static_assert((sizeof(Packet::packet_header_t) % 4) == 0);
 						(packet_header->header_length + packet_header->payload_length + packet_header->oob_length) %
 						packet.length()));
 
-			our_checksum = Encryption::crc32(std::string_view(reinterpret_cast<const char *>(packet_header), offsetof(packet_header_t, header_checksum)));
+			our_checksum = Crypt::crc32(std::string_view(reinterpret_cast<const char *>(packet_header), offsetof(packet_header_t, header_checksum)));
 
 			if(our_checksum != packet_header->header_checksum)
 				throw(hard_exception(boost::format("invalid header checksum, ours: 0x%x, theirs: 0x%x") % our_checksum % packet_header->header_checksum));
@@ -129,11 +128,11 @@ static_assert((sizeof(Packet::packet_header_t) % 4) == 0);
 			data = packet.substr(packet_header->header_length, packet_header->payload_length);
 			oob_data = packet.substr(packet_header->header_length + packet_header->payload_length);
 
-			encryption.crc32_init();
-			encryption.crc32_update(std::string_view(reinterpret_cast<const char *>(packet_header), offsetof(packet_header_t, packet_checksum)));
-			encryption.crc32_update(data);
-			encryption.crc32_update(oob_data);
-			our_checksum = encryption.crc32_finish();
+			crc.init();
+			crc.update(std::string_view(reinterpret_cast<const char *>(packet_header), offsetof(packet_header_t, packet_checksum)));
+			crc.update(data);
+			crc.update(oob_data);
+			our_checksum = crc.string_to_uint32(crc.finish());
 
 			if(our_checksum != packet_header->packet_checksum)
 				throw(hard_exception(boost::format("invalid packet checksum, ours: 0x%x, theirs: 0x%x") % our_checksum % packet_header->packet_checksum));
