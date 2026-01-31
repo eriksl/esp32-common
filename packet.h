@@ -62,4 +62,11 @@ class Packet
 			uint32_t packet_checksum;
 			uint8_t data[];
 		} packet_header_t;
+
+	public:
+
+		static unsigned int packet_header_size()
+		{
+			return(sizeof(packet_header_t));
+		}
 };
