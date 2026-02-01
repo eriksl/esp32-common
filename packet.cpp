@@ -60,7 +60,7 @@ std::string Packet::encapsulate(bool packetised, std::string_view data, std::str
 		crc.update(std::string_view(reinterpret_cast<const char *>(&packet_header), offsetof(packet_header_t, packet_checksum)));
 		crc.update(data);
 		crc.update(oob_data);
-		packet_header.packet_checksum = crc.string_to_uint32(crc.finish());
+		packet_header.packet_checksum = Crypt::string_to_uint32(crc.finish());
 
 		packet.assign(reinterpret_cast<const char *>(&packet_header), sizeof(packet_header));
 		packet.append(data);
@@ -132,7 +132,7 @@ static_assert((sizeof(Packet::packet_header_t) % 4) == 0);
 			crc.update(std::string_view(reinterpret_cast<const char *>(packet_header), offsetof(packet_header_t, packet_checksum)));
 			crc.update(data);
 			crc.update(oob_data);
-			our_checksum = crc.string_to_uint32(crc.finish());
+			our_checksum = Crypt::string_to_uint32(crc.finish());
 
 			if(our_checksum != packet_header->packet_checksum)
 				throw(hard_exception(boost::format("invalid packet checksum, ours: 0x%x, theirs: 0x%x") % our_checksum % packet_header->packet_checksum));

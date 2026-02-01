@@ -2,9 +2,9 @@
 
 #include <exception>
 #include <string>
-#include <boost/format.hpp>
+#include <boost/format.hpp> // FIXME
 
-class e32if_exception : public std::exception
+class e32if_exception : private std::exception
 {
 	public:
 
@@ -20,7 +20,7 @@ class e32if_exception : public std::exception
 		const std::string what_string;
 };
 
-class hard_exception : public e32if_exception
+class hard_exception final : private e32if_exception
 {
 	public:
 
@@ -28,14 +28,19 @@ class hard_exception : public e32if_exception
 		hard_exception(const std::string &what);
 		hard_exception(const char *what);
 		hard_exception(const boost::format &what);
+
+		const char *what() const noexcept override;
 };
 
-class transient_exception : public e32if_exception
+class transient_exception final : private e32if_exception
 {
 	public:
 
 		transient_exception() = delete;
+
 		transient_exception(const std::string &what);
 		transient_exception(const char *what);
 		transient_exception(const boost::format &what);
+
+		const char *what() const noexcept override;
 };

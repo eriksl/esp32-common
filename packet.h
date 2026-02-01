@@ -3,7 +3,7 @@
 #include <string>
 #include <stdint.h>
 
-class Packet
+class Packet final
 {
 	public:
 
