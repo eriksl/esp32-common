@@ -1,6 +1,6 @@
 #pragma once
 
-#include <stdint.h>
+#include <cstdint>
 #include <string>
 
 #include <mbedtls/cipher.h>
@@ -41,7 +41,8 @@ namespace Crypt
 
 		private:
 
-			uint32_t crc;
+			static const std::array<std::uint32_t, 256> crc32_table;
+			std::uint32_t crc;
 			unsigned int checksummed;
 	};
 
@@ -74,22 +75,25 @@ namespace Crypt
 			AES256& operator =(const AES256 &) = delete;
 			virtual ~AES256();
 
+			static const std::array<std::uint8_t, 4> password_salt;
+
 			void		init(bool encrypt, std::string_view key) override;
 			std::string update(std::string_view in) override;
 			std::string	finish() override;
 
 		private:
 
+			static const std::array<std::uint8_t, 16> init_vector;
 			mbedtls_cipher_context_t ctx;
 
 	};
 
 	std::string password_to_aes256_key(std::string_view password);
 	std::string hash_to_text(std::string_view hash);
-	std::string uint32_to_string(uint32_t);
-	uint32_t string_to_uint32(std::string_view);
+	std::string uint32_to_string(std::uint32_t);
+	std::uint32_t string_to_uint32(std::string_view);
 
-	uint32_t crc32(std::string_view in);
+	std::uint32_t crc32(std::string_view in);
 	std::string sha256(std::string_view in);
 	std::string aes256(bool encrypt, std::string_view key, std::string_view in);
 }
