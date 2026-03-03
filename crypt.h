@@ -16,6 +16,8 @@ namespace Crypt
 
 			Generic();
 			Generic(const Generic &) = delete;
+			Generic(const Generic &&) = delete;
+			Generic& operator =(const Generic &) = delete;
 			virtual ~Generic() = 0;
 
 			virtual	void		init(bool encrypt = false, std::string_view key = "") = 0;
@@ -29,6 +31,8 @@ namespace Crypt
 
 			CRC32();
 			CRC32(const CRC32 &) = delete;
+			CRC32(const CRC32 &&) = delete;
+			CRC32& operator =(const CRC32 &) = delete;
 			virtual ~CRC32();
 
 			void		init(bool encrypt = false, std::string_view key = "") override;
@@ -47,6 +51,8 @@ namespace Crypt
 
 			SHA256();
 			SHA256(const CRC32 &) = delete;
+			SHA256(const CRC32 &&) = delete;
+			SHA256& operator =(const SHA256 &) = delete;
 			virtual ~SHA256();
 
 			void		init(bool encrypt = false, std::string_view key = "") override;
@@ -64,6 +70,8 @@ namespace Crypt
 
 			AES256();
 			AES256(const CRC32 &) = delete;
+			AES256(const CRC32 &&) = delete;
+			AES256& operator =(const AES256 &) = delete;
 			virtual ~AES256();
 
 			void		init(bool encrypt, std::string_view key) override;
