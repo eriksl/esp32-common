@@ -1,5 +1,10 @@
 #include "exception.h"
 
+e32if_exception::e32if_exception() :
+		what_string("")
+{
+}
+
 e32if_exception::e32if_exception(const std::string &what) :
 		what_string(what)
 {
@@ -20,6 +25,11 @@ const char *e32if_exception::what() const noexcept
 	return(what_string.c_str());
 }
 
+hard_exception::hard_exception() :
+		e32if_exception()
+{
+}
+
 hard_exception::hard_exception(const std::string &what) :
 		e32if_exception(what)
 {
@@ -38,6 +48,11 @@ hard_exception::hard_exception(const boost::format &what) :
 const char *hard_exception::what() const noexcept
 {
 	return(e32if_exception::what());
+}
+
+transient_exception::transient_exception() :
+		e32if_exception()
+{
 }
 
 transient_exception::transient_exception(const std::string &what) :

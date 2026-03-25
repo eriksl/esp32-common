@@ -8,7 +8,7 @@ class e32if_exception : private std::exception
 {
 	public:
 
-		e32if_exception() = delete;
+		e32if_exception();
 		e32if_exception(const std::string &what);
 		e32if_exception(const char *what);
 		e32if_exception(const boost::format &what);
@@ -24,7 +24,7 @@ class hard_exception final : private e32if_exception
 {
 	public:
 
-		hard_exception() = delete;
+		hard_exception();
 		hard_exception(const std::string &what);
 		hard_exception(const char *what);
 		hard_exception(const boost::format &what);
@@ -36,7 +36,7 @@ class transient_exception final : private e32if_exception
 {
 	public:
 
-		transient_exception() = delete;
+		transient_exception();
 
 		transient_exception(const std::string &what);
 		transient_exception(const char *what);
