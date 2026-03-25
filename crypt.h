@@ -117,6 +117,7 @@ namespace Crypt
 	std::uint32_t string_to_uint32(std::string_view);
 
 	std::uint8_t crc8_31(std::string_view in, std::uint8_t initial = 0xff);
+	std::uint8_t crc8_31(std::basic_string_view<uint8_t> in, std::uint8_t initial = 0xff);
 	std::uint32_t crc32(std::string_view in);
 	std::string sha256(std::string_view in);
 	std::string aes256(bool encrypt, std::string_view key, std::string_view in);

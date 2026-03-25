@@ -448,6 +448,16 @@ namespace Crypt
 		return(string_to_uint8(crc.finish()));
 	}
 
+	std::uint8_t crc8_31(std::basic_string_view<uint8_t> in, std::uint8_t initial)
+	{
+		std::string char_string;
+
+		for(auto const &i : in)
+			char_string.push_back(static_cast<int8_t>(i));
+
+		return(Crypt::crc8_31(char_string, initial));
+	}
+
 	std::uint32_t crc32(std::string_view in)
 	{
 		CRC32 crc;
